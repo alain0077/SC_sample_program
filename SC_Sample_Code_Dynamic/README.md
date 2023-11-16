@@ -1,6 +1,8 @@
 # 仕様・説明 <!-- omit in toc -->
 本プログラムで実装した一部のクラスや関数の使い方などについて簡単に説明．
 同じディレクトリ内にあるMakefileは計算機サーバー（sota）で使えます．
+SNが固定長だったのを可変長に変更しました．
+`bitset<N>`を`vector<bool>`に置き換えたのでビット演算は遅いかも…？
 ###### ※使用例などで書いているコードはコンパイルは通らないです．
 
 - [SC::SN](#scsn)
@@ -38,20 +40,20 @@ SNのビット列や値を管理するクラスやSNを生成する関数，SN�
 
 ## メンバ関数
 + [構築・破壊](#構築破壊)
-  + SN(int, int)
   + SN(int, int, int)
-  + SN(double, double, bitset<N>)
+  + SN(int, int, int, int)
+  + SN(double, vector<bool>)
   + ~SN() = default;
 + [表示・取得](#表示取得)
   + print_bs() : void
-  + get_sn() : bitset<N>
+  + get_sn() : vector<bool>
   + get_val() : double
   + get_ans() : double
 
 ## 非メンバ関数
 + [生成](#生成)
-  + SNG(int, int) : SN
   + SNG(int, int, int) : SN
+  + SNG(int, int, int, int) : SN
 + [相関](#相関)
   + SCC(vector<bool>, vector<bool>) : double
   + SCC(SN, SN) : double
@@ -64,18 +66,18 @@ int seed;   // 準乱数生成器の初期値，基本的には乱数
 int shift;  // シフトするビット長
 double val;   // SNの値（ ビット列中の1の数 / ビット長N ）
 double ans;   // SNの本来の値（演算誤差を含まない値，生成時は　x/N となる．）
-bitset<N> sn; // SNのビット列．
+vector<bool> sn; // SNのビット列．
 
 // 与えられた引数xより，準乱数生成器（LFSR，non-LFSR）を用いてSNを生成する．
 // 準乱数生成器の初期値はseedが設定される．
-SN sn1 = SN(x, seed);
+SN sn1 = SN(x, seed, N);
 
 // 用いる準乱数生成器がビットシフトに対応している．
 // 基本的な生成の流れは同様．第3引数にはシフトするビット長を与える．
-SN sn2 = SN(x, seed, shift);
+SN sn2 = SN(x, seed, shift, N);
 
 // 任意のSNを生成するためのコンストラクタ．
-SN sn3 = SN(val, ans, sn);
+SN sn3 = SN(val, sn);
 ```
 > Note：
 > 
@@ -102,8 +104,8 @@ int seed1;  // 乱数その１
 int seed2;  // 乱数その２
 
 // SNを生成
-SN sn1 = SN(x, seed1);
-SN sn2 = SN(y, seed2);
+SN sn1 = SN(x, seed1, N);
+SN sn2 = SN(y, seed2, N);
 
 // 演算前のSNの状態をprint
 sn1.print_bs();
@@ -135,11 +137,11 @@ int shift;  // シフトするビット長
 
 // 与えられた引数xより，準乱数生成器（LFSR，non-LFSR）を用いてSNを生成する．
 // 準乱数生成器の初期値はseedが設定される
-SN sn1 = SNG(x, seed);
+SN sn1 = SNG(x, seed, N);
 
 // 用いる準乱数生成器がビットシフトに対応している
 // 基本的な生成の流れは同様．第3引数にはシフトするビット長を与える
-SN sn2 = SNG(x, seed, shift);
+SN sn2 = SNG(x, seed, shift, N);
 ```
 
 ## 相関
@@ -148,14 +150,15 @@ SN sn2 = SNG(x, seed, shift);
 | ```SCC``` | 引数で与えられたSNとの相関を求める． |
 
 ```c++
+int N;      // SNのビット長
 int x, y;   // 定数（SNに変換する値）
 int seed1;  // 乱数その１
 int seed2;  // 乱数その２
 
 // SNを生成
-SN sn1 = SN(x, seed1);
-SN sn2 = SN(y, seed1);
-SN sn3 = SN(y, seed2);
+SN sn1 = SN(x, seed1, N);
+SN sn2 = SN(y, seed1, N);
+SN sn3 = SN(y, seed2, N);
 
 // 2つのSNの相関を求める
 double scc1 = SCC(sn1, sn2);
@@ -243,8 +246,8 @@ AbsError error;
 for(int i = 1; i < N; i++) {
   for(int j = 1; j < N; j++) {
     // 入力SNを生成
-    SN sn1 = SN(i, seed1);
-    SN sn2 = SN(j, seed2);
+    SN sn1 = SN(i, seed1, N);
+    SN sn2 = SN(j, seed2, N);
 
     // 演算実行
     SN ans = AND(sn1, sn2);
@@ -317,8 +320,8 @@ Analysis error;
 for(int i = 1; i < N; i++) {
   for(int j = 1; j < N; j++) {
     // 入力SNを生成
-    SN sn1 = SN(i, seed1);
-    SN sn2 = SN(j, seed2);
+    SN sn1 = SN(i, seed1, N);
+    SN sn2 = SN(j, seed2, N);
 
     // 演算実行
     SN ans = AND(sn1, sn2);
@@ -376,7 +379,8 @@ int N;    // SNのビット長
 int x,y;  // 定数（SNに変換する値）
 
 // 乱数生成器を生成
-// 1からN-1までの乱数を生成
+// Define::MINからDefine::MAXまでの乱数を生成
+// Define.hで定義されています．
 auto randN = Random();
 // 1からM-1までの乱数を生成
 auto randM = Random(M);
