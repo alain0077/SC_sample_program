@@ -387,7 +387,7 @@ auto randM = Random(M);
 // minからmaxまでの乱数を生成
 auto rand = Random(min, max);
 
-// 1からN-1の範囲で乱数を生成
+// 乱数を生成
 int rnd1 = randN();
 int rnd2 = randN();
 
